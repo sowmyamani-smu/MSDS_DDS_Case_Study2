@@ -1,0 +1,1325 @@
+---
+title: "DDSAnalytics Project"
+MSDS 6306: Doing Data Science - Case Study 02
+Group Members: Sowmya Mani
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+Date: March 03 2021
+---
+
+```{r Intro}
+#Introduction: This Case Study is about analyzing the workforce planning, employee training programs, identifying high-potential employees and reducing/preventing voluntary employee turnover (attrition) for FritoLAy.
+
+#Description: DDSAnalytics is an analytics company that specializes in talent management solutions for Fortune 100 companies. Talent management is defined as the iterative process of developing and retaining employees. It may include workforce planning, employee training programs, identifying high-potential employees and reducing/preventing voluntary employee turnover (attrition). To gain a competitive edge over its competition, DDSAnalytics is planning to leverage data science for talent management. The executive leadership has identified predicting employee turnover as its first application of data science for talent management. Before the business green lights the project, they have tasked your data science team to conduct an analysis of existing employee data. 
+
+#The data set used for this case study analysis consists of 3 Datasets:
+
+#CaseStudy2-data : Dataset consists of the below details:
+#Age:Age of the Employee (numeric)
+#Attrition:Attrition Status of the Employee (Yes/No)
+#Business Travel:Travel required in the job (non numeric)
+#DailyRate:Daily Rate of the Employee (numeric)
+#Department:Department in the company where the Empoyee is working for (non numeric)
+#DistanceFromHome:Distance the employee travels from home to work (numeric)
+#Education:Education level of Employee (numeric)
+#EducationField:Employee Field of study (non numeric)
+#EmployeeCount:Count of Employee per observation (numeric)
+#EmployeeNumber:Employee ID a unique identifier of Employee (numeric)
+#EnvironmentSatisfaction:Employee Satisfaction number (numeric)
+#Gender:Gender of Employee (non numeric Male/Female)
+#HourlyRate:Hourly Rate of Employee (numeric)
+#JobInvolvement:Job involvement of Employee (numeric)
+#JobLevel:Job Level of Employee (numeric)
+#JobRole:Designation of the Employee (non numeric)
+#JobSatisfaction:Job satisfaction of Employee (numeric)
+#MaritalStatus:Marital status of Employee (non numeric)
+#MonthlyIncome:Monthly income of Employee (numeric)
+#MonthlyRate:Monthly rate of employee (numeric)
+#NumCompaniesWorked:Number of companies worked by employee (numeric)
+#Over18:Check if Employee > 18 (Y/N)
+#OverTime:Is the employee working overtime (Yes/No)
+#PercentSalaryHike:Percentage of Salary Hike (numeric)
+#PerformanceRating:Performance Rating (numeric)
+#RelationshipSatisfaction:Employee relationship satisfaction (numeric)
+#StandardHours:Standard work hours of employee (numeric)
+#StockOptionLevel:Stock option level (numeric)
+#TotalWorkingYears:Total work years of experience (numeric)
+#TrainingTimesLastYear:Hours of training last year (numeric)
+#WorkLifeBalance:Work life balance (numeric)
+#YearsAtCompany:Number of years worked in this company (numeric)
+#YearsInCurrentRole:Years of Employee in current role (numeric)
+#YearsSinceLastPromotion:Years of employee since last promotion (numeric)
+#YearsWithCurrManager:Years of employee with same manager (numeric)
+
+#CaseStudy2CompSet No Salary : This is a test dataset to predict the salary of an employee
+#CaseStudy2CompSet No Attrition: This is a test dataset to predict the attrition status of the employee
+
+#The goal of this case study is to analyze the employee dataset of Fritolay to 
+#1.Predict Attrition
+#2.Predict the Employee Salary
+#3.Identify the top three factors that contribute to turnover
+#4.Identify any job role specific trends that may exist
+#5.Interesting trends and observations from your analysis
+ 
+#Libraries loaded for the ANalysis
+library(XML) 
+library(dplyr)
+library(RCurl)
+library(httr)
+library(jsonlite)
+library(tidyverse)
+library(naniar)
+library(GGally)
+library(ggplot2)
+library(class)
+library(caret)
+library(knnp)
+library(e1071)
+library(maps)
+library(mapproj)
+library(ggcorrplot)
+library(viridis)
+library(gplots)
+library(leaps)
+library(matrixStats)
+library(ResourceSelection)
+library(MASS)
+library(glmnet)
+library(ROCR)
+library(randomForest)
+library(magrittr)
+library(tidyr)
+library(plotly)
+library(forcats)
+library(car)
+library(ISLR)
+library(olsrr)
+library(OLScurve)
+library(shiny)
+library(MASS)
+library(tidyverse)
+
+#Import the Employee Data
+Empl<-read.csv('C:/Sowmya/SMU/04_Doing Data Science/Unit-14 & Unit-15/CaseStudy2-data.csv',header = TRUE)
+Empl_nosal<-read.csv('C:/Sowmya/SMU/04_Doing Data Science/Unit-14 & Unit-15/CaseStudy2CompSet_No_Salary.csv',header = TRUE)
+Empl_No_Attrition<-read.csv('C:/Sowmya/SMU/04_Doing Data Science/Unit-14 & Unit-15/CaseStudy2CompSet_No_Attrition.csv',header = TRUE)
+
+#Quick Peek at the SUmmary of the available dataset
+summary(Empl)
+str(Empl)
+
+#Checking for Missing Data
+sapply(Empl,function(x) sum(is.na(x)))
+gg_miss_var(Empl)+xlab("Missing Variables")
+
+#No missing data found
+
+#Importing the Test Data set
+
+#Importing Test data set to predict Employee Salary
+Empl_Sal<-read.csv('C:/Sowmya/SMU/04_Doing Data Science/Unit-14 & Unit-15/CaseStudy2CompSet_No_Salary.csv',header = TRUE)
+summary(Empl_Sal)
+str(Empl_Sal)
+
+#Rechecking if the data set has any missing data
+sapply(Empl_Sal,function(x) sum(is.na(x)))
+gg_miss_var(Empl_Sal)+xlab("Missing Variables")
+#No Missing data found
+
+#Importing Test data set to predict Employee Attrition
+Empl_Att<-read.csv('C:/Sowmya/SMU/04_Doing Data Science/Unit-14 & Unit-15/CaseStudy2CompSet_No_Attrition.csv',header = TRUE)
+summary(Empl_Att)
+str(Empl_Att)
+
+#Rechecking if the data set has any missing data
+sapply(Empl_Att,function(x) sum(is.na(x)))
+gg_miss_var(Empl_Att)+xlab("Missing Variables")
+#No Missing data found
+
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r Attrition EDA}
+
+#With Attrition as Response
+#Attrition
+Empl%>%
+  ggplot(aes(x=(as.factor(Employee.Count)), fill=Attrition)) + 
+  geom_bar(position = "fill") + 
+  scale_fill_viridis_d() +
+  ylab("Proposition") +xlab("Attrition")+
+  ggtitle("Proposition subscribed to Attrition")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#The overall the attrition rate is 16% for Yes and 84% for No
+
+#Age Vs Attrition
+prop.table(table(Empl$Attrition,Empl$Age),2)
+Empl%>%
+  ggplot(aes(x=Age, fill=Attrition)) + 
+  geom_bar(position = "fill") + 
+  scale_fill_viridis_d() +
+  ylab("Proposition") +xlab("Attrition")+
+  ggtitle("Proposition subscribed to Attrition by Age")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#Attrition Rate seems to be higher for Age < 35 and slowly increases after 50 which is not as much as for ages < 35.
+
+# BusinessTravel vs Attrition
+prop.table(table(Empl$Attrition,Empl$BusinessTravel),2)
+Empl %>% 
+  ggplot(aes(x=BusinessTravel, fill=Attrition)) + 
+  geom_bar(position="fill") + 
+  scale_fill_viridis_d() +
+  ylab("Proportion") +xlab("BusinessTravel")+
+  ggtitle("Proposition subscribed to Attrition by BusinessTravel")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#Attrition Rate seems to be higher for frequent travel jobs preceding by Rarely travel jobs.
+
+# Daily Rate vs Attrition
+t(aggregate(Daily.Rate~Attrition,data=Empl,summary))
+Empl %>%
+  ggplot(aes(x=Attrition, y=log(Daily.Rate), color=Attrition)) +
+  geom_boxplot() +
+  scale_color_viridis_d() +
+  ggtitle("Daily Rate vs Attrition") +
+  xlab("Daily Rate")
+#The Attrition rate is higher for Employees with comparatively lower daily rates
+
+# Department vs Attrition
+prop.table(table(Empl$Attrition,Empl$Department),2)
+Empl %>% 
+  ggplot(aes(x=Department, fill=Attrition)) + 
+  geom_bar(position="fill") + 
+  scale_fill_viridis_d() +
+  ylab("Proportion") +xlab("Department")+
+  ggtitle("Proposition subscribed to Attrition by Department")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#Attrition Rate seems to be higher for Sales than Human Resources and Research&Development.
+#Research&Development has lower attrition rate.
+
+# Distance From Home vs Attrition
+t(aggregate(Distance.From.Home~Attrition,data=Empl,summary))
+Empl %>%
+  ggplot(aes(x=Attrition, y=Distance.From.Home, color=Attrition)) +
+  geom_boxplot() +
+  scale_color_viridis_d() +
+  ggtitle("Distance From Home vs Attrition") +
+  xlab("Distance From Home")+
+  ggtitle("Proposition subscribed to Attrition by Distance From Home")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#The Attrition rate is high for Employees who traveled longer distance to work
+
+# Education vs Attrition
+prop.table(table(Empl$Attrition,Empl$Education),2)
+Empl %>% 
+  ggplot(aes(x=Education, fill=Attrition)) + 
+  geom_bar(position="fill") + 
+  scale_fill_viridis_d() +
+  ylab("Proportion") +xlab("Education")+
+  ggtitle("Proposition subscribed to Attrition by Education")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#Attrition Rate is high at Education level 1,2 and 3 than 4 and 5
+
+# Education Field vs Attrition
+prop.table(table(Empl$Attrition,Empl$EducationField),2)
+Empl %>% 
+  ggplot(aes(x=EducationField, fill=Attrition)) + 
+  geom_bar(position="fill") + 
+  scale_fill_viridis_d() +
+  ylab("Proportion") +xlab("Education Field")+
+  ggtitle("Proposition subscribed to Attrition by Education Field")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#Attrition Rate seems to be higher for Human Resource,Technical Degree and Marketing. The employees in Education Filed Life science, Medical and other are more content.
+
+#Environment Satisfaction Vs Attrition
+prop.table(table(Empl$Environment.Satisfaction,Empl$Attrition),2)
+Empl %>% 
+  ggplot(aes(x=Environment.Satisfaction, fill=Attrition)) + 
+  geom_bar(position="fill") + 
+  scale_fill_viridis_d() +
+  ylab("Proportion") +xlab("Environment Satisfaction")+
+  ggtitle("Proposition subscribed to Attrition by Environment Satisfaction")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#Attrition Rate seems to be high for Environment Satisfaction level 1 than 2,3 and 4
+
+#Gender Vs Attrition
+prop.table(table(Empl$Gender,Empl$Attrition),2)
+Empl %>% 
+  ggplot(aes(x=Gender, fill=Attrition)) + 
+  geom_bar(position="fill") + 
+  scale_fill_viridis_d() +
+  ylab("Proportion") +xlab("Gender")+
+  ggtitle("Proposition subscribed to Attrition by Gender")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#Attrition Rate seems to be high for Male than Female
+
+# Hourly Rate vs Attrition
+t(aggregate(Hourly.Rate~Attrition,data=Empl,summary))
+Empl %>%
+  ggplot(aes(x=Attrition, y=log(Hourly.Rate), color=Attrition)) +
+  geom_boxplot() +
+  scale_color_viridis_d() +
+  ggtitle("Hourly.Rate vs Attrition") +
+  xlab("Hourly Rate")+
+  ggtitle("Proposition subscribed to Attrition by Hourly Rate")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#The Attrition rate is high for Employees who had comparatively higher hourly rate
+
+#Job Involvement Vs Attrition
+prop.table(table(Empl$Job.Involvement,Empl$Attrition),2)
+Empl %>% 
+  ggplot(aes(x=Job.Involvement, fill=Attrition)) + 
+  geom_bar(position="fill") + 
+  scale_fill_viridis_d() +
+  ylab("Proportion") +xlab("Job Involvement")+
+  ggtitle("Proposition subscribed to Attrition by Job Involvement")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#Attrition Rate seems to be high for Job Involvement 1.Job Involvement level 4 has the least attrition rate.
+
+#Job Level Vs Attrition
+prop.table(table(Empl$Job.Level,Empl$Attrition),2)
+Empl %>% 
+  ggplot(aes(x=Job.Level, fill=Attrition)) + 
+  geom_bar(position="fill") + 
+  scale_fill_viridis_d() +
+  ylab("Proportion") +xlab("Job Level")+
+  ggtitle("Proposition subscribed to Attrition by Job Level")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#Attrition Rate seems to be high for Job Level 1. Job level 4 has the lower attrition.
+
+#Job Role Vs Attrition
+prop.table(table(Empl$Job.Role,Empl$Attrition),2)
+Empl %>% 
+  ggplot(aes(x=Job.Role, fill=Attrition)) + 
+  geom_bar(position="fill") + 
+  scale_fill_viridis_d() +
+  ylab("Proportion") +xlab("Job Role")+
+  ggtitle("Proposition subscribed to Attrition by Job Role")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#Attrition Rate seems to be high for Sales Rep and Human Resource.Laboratory Technician,Research Scientist and sales executive are the next in row for attrition.Manufacturing Director & Research Director are more content with their job.
+
+#Job Satisfaction Vs Attrition
+prop.table(table(Empl$Job.Satisfaction,Empl$Attrition),2)
+Empl %>% 
+  ggplot(aes(x=Job.Satisfaction, fill=Attrition)) + 
+  geom_bar(position="fill") + 
+  scale_fill_viridis_d() +
+  ylab("Proportion") +xlab("Job Satisfaction")+
+  ggtitle("Proposition subscribed to Attrition by Job Satisfaction")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#Attrition Rate seems to be high for Job Satisfaction 1.Job Satisfaction 4 has lowest attrition.
+
+#Marital Status Vs Attrition
+prop.table(table(Empl$Marital.Status,Empl$Attrition),2)
+Empl %>% 
+  ggplot(aes(x=Marital.Status, fill=Attrition)) + 
+  geom_bar(position="fill") + 
+  scale_fill_viridis_d() +
+  ylab("Proportion") +xlab("Marital Status")+
+  ggtitle("Proposition subscribed to Attrition by Marital Status")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#Attrition Rate seems to be high with Singles
+
+# Monthly Income vs Attrition
+t(aggregate(Monthly.Income~Attrition,data=Empl,summary))
+Empl %>%
+  ggplot(aes(x=Attrition, y=Monthly.Income, color=Attrition)) +
+  geom_boxplot() +
+  scale_color_viridis_d() +
+  ggtitle("Monthly Income vs Attrition") +
+  xlab("Monthly Income")+
+  ggtitle("Proposition subscribed to Attrition by Monthly Income")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#The Attrition rate is high for Employees who have lower Monthly Income. Higher the monthly income the more content the employees are with their job.
+
+# Monthly Rate vs Attrition
+t(aggregate(Monthly.Rate~Attrition,data=Empl,summary))
+Empl %>%
+  ggplot(aes(x=Attrition, y=Monthly.Rate, color=Attrition)) +
+  geom_boxplot() +
+  scale_color_viridis_d() +
+  ggtitle("Monthly Rate vs Attrition") +
+  xlab("Monthly Rate")+
+  ggtitle("Proposition subscribed to Attrition by Monthly Rate")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#The Attrition rate is higher for Employees who had comparatively lower monthly rates
+
+#Num Companies Worked Vs Attrition
+prop.table(table(Empl$Num.Companies.Worked,Empl$Attrition),2)
+Empl %>% 
+  ggplot(aes(x=Num.Companies.Worked, fill=Attrition)) + 
+  geom_bar(position="fill") + 
+  scale_fill_viridis_d() +
+  ylab("Proportion") +xlab("Num Companies Worked")+
+  ggtitle("Proposition subscribed to Attrition by Num Companies Worked")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#Attrition Rate seems to be higher for Employees who had worked in 5 or more companies.
+
+#OverTime Worked Vs Attrition
+prop.table(table(Empl$OverTime,Empl$Attrition),2)
+Empl %>% 
+  ggplot(aes(x=OverTime, fill=Attrition)) + 
+  geom_bar(position="fill") + 
+  scale_fill_viridis_d() +
+  ylab("Proportion") +xlab("OverTime")+
+  ggtitle("Proposition subscribed to Attrition by OverTime")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#Attrition Rate seems to be higher for Employees who worked overtime
+
+# Percent Salary vs Attrition
+t(aggregate(Percent.Salary.Hike~Attrition,data=Empl,summary))
+Empl %>%
+  ggplot(aes(x=Attrition, y=Percent.Salary.Hike, color=Attrition)) +
+  geom_boxplot() +
+  scale_color_viridis_d() +
+  ggtitle("Percent Salary Hike vs Attrition") +
+  xlab("Percent Salary Hike")+
+  ggtitle("Proposition subscribed to Attrition by Percent Salary Hike")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#Not much difference on the attrition rate
+
+# Performance Rating vs Attrition
+prop.table(table(Empl$Performance.Rating,Empl$Attrition),2)
+Empl %>% 
+  ggplot(aes(x=as.factor(Performance.Rating), fill=Attrition)) + 
+  geom_bar(position="fill") + 
+  scale_fill_viridis_d() +
+  ylab("Proportion") +xlab("Performance Rating")+
+  ggtitle("Proposition subscribed to Attrition by Performance Rating")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#The Attrition rate is high for Employees who have performance rating 4
+
+#Relationship Satisfaction Vs Attrition
+prop.table(table(Empl$Relationship.Satisfaction,Empl$Attrition),2)
+Empl %>% 
+  ggplot(aes(x=Relationship.Satisfaction, fill=Attrition)) + 
+  geom_bar(position="fill") + 
+  scale_fill_viridis_d() +
+  ylab("Proportion") +xlab("Relationship Satisfaction")+
+  ggtitle("Proposition subscribed to Attrition by Relationship Satisfaction")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#Attrition Rate seems to be high for Employees who had relationship satisfaction 1
+
+#Stock Option Level Vs Attrition
+prop.table(table(Empl$Stock.Option.Level,Empl$Attrition),2)
+Empl %>% 
+  ggplot(aes(x=Stock.Option.Level, fill=Attrition)) + 
+  geom_bar(position="fill") + 
+  scale_fill_viridis_d() +
+  ylab("Proportion") +xlab("Stock Option Level")+
+  ggtitle("Proposition subscribed to Attrition by Stock Option Level")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#Attrition Rate seems to be high for Employees who have stock option 0 and 3
+
+# Total Working Years vs Attrition
+t(aggregate(Total.Working.Years~Attrition,data=Empl,summary))
+Empl %>%
+  ggplot(aes(x=Attrition, y=Total.Working.Years, color=Attrition)) +
+  geom_boxplot() +
+  scale_color_viridis_d() +
+  ggtitle("Total Working Years vs Attrition") +
+  xlab("Total Working Years")+
+  ggtitle("Proposition subscribed to Attrition by Total Working Years")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#The Attrition rate is higher for Employees who had less working years. There is an outlier at Total Working Years 40.
+	
+# Training Times Last Year vs Attrition
+t(aggregate(Training.Times.Last.Year~Attrition,data=Empl,summary))
+Empl %>%
+  ggplot(aes(x=Attrition, y=Training.Times.Last.Year, color=Attrition)) +
+  geom_boxplot() +
+  scale_color_viridis_d() +
+  ggtitle("Training Times Last Year vs Attrition") +
+  xlab("Total Working Years")+
+  ggtitle("Proposition subscribed to Attrition by Training Times Last Year")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#Not much impact
+
+# Work Life Balance vs Attrition
+prop.table(table(Empl$Work.Life.Balance,Empl$Attrition),2)
+Empl %>% 
+  ggplot(aes(x=Work.Life.Balance, fill=Attrition)) + 
+  geom_bar(position="fill") + 
+  scale_fill_viridis_d() +
+  ylab("Proportion") +xlab("Work Life Balance")+
+  ggtitle("Proposition subscribed to Attrition by Work Life Balance")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#Attrition Rate seems to be higher for Employees who have work life balance 1
+
+# Years At Company vs Attrition
+t(aggregate(Years.At.Company~Attrition,data=Empl,summary))
+Empl %>%
+  ggplot(aes(x=Attrition, y=(Years.At.Company), color=Attrition)) +
+  geom_boxplot() +
+  scale_color_viridis_d() +
+  ggtitle("Years At Company vs Attrition") +
+  xlab("Total Working Years")+
+  ggtitle("Proposition subscribed to Attrition by Years At Company")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#Attrition Rate seems to be more for Employees who worked less years in the company.There is an outlier at Years At Company=40.
+#The employees who worked for longer years in a company are more content and satisfied.
+
+# Years In Current Role vs Attrition
+t(aggregate(Years.In.Current.Role~Attrition,data=Empl,summary))
+Empl %>%
+  ggplot(aes(x=Attrition, y=(Years.In.Current.Role), color=Attrition)) +
+  geom_boxplot() +
+  scale_color_viridis_d() +
+  ggtitle("Years In Current Role vs Attrition") +
+  xlab("Years In Current Role")+
+  ggtitle("Proposition subscribed to Attrition by Years In Current Role")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#Attrition Rate seems to be high for Employees who were in the current role for less years
+
+# Years Since Last Promotion vs Attrition
+t(aggregate(Years.Since.Last.Promotion~Attrition,data=Empl,summary))
+Empl %>%
+  ggplot(aes(x=Attrition,y=log(Years.Since.Last.Promotion),color=Attrition)) +
+  geom_boxplot() +
+  scale_color_viridis_d() +
+  ggtitle("Years Since Last Promotion vs Attrition") +
+  xlab("Years Since Last Promotion")+
+  ggtitle("Proposition subscribed to Attrition by Years Since Last Promotion")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#Attrition Rate seems to be high for Employees who were in the company for less years after promotion
+
+# Years With Current Manager vs Attrition
+t(aggregate(Years.With.Curr.Manager~Attrition,data=Empl,summary))
+Empl %>%
+  ggplot(aes(x=Attrition,y=log(Years.With.Curr.Manager),color=Attrition)) +
+  geom_boxplot() +
+  scale_color_viridis_d()+
+  ggtitle("Years With Curr Manager vs Attrition") +
+  xlab("Years With Curr Manager")+
+  ggtitle("Proposition subscribed to Attrition by Years With Curr Manager")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#Attrition Rate seems to be high for Employees who with their current manager for less years comparatively.There is an outlier at Attrition="No" and Years with current Manager > 15.
+```
+
+```{r EDA Salary}
+#With Monthly Income(Salary) as Response
+#Monthly Income as Response
+Empl%>%
+  ggplot(aes(x=log(Monthly.Income),fill=Attrition)) + 
+  geom_histogram()  +
+  ylab("Count") +xlab("Monthly Income")+scale_fill_viridis_d()+
+  ggtitle("Monthly Income Summary")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#The Monthly Income is skewed. With the number of observations in the dataset, this should not be a problem based on the central limit #theorem.Log transform looks better
+
+#Monthly Income Vs Age
+Empl %>%
+  ggplot(aes(x=(Age), y=(Monthly.Income), color=Attrition)) +
+  geom_point(position="jitter") +
+  scale_color_viridis_d() +geom_smooth(method = "lm")+ylab("Monthly Income") +xlab("Age")+
+  ggtitle("Monthly Income by Age")+ggtitle("Monthly Income By Age")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#Age and Monthly Income seems to be linearly correlated
+
+#Monthly Income Vs Attrition
+Empl %>%
+  ggplot(aes(x=Attrition,y=Monthly.Income,fill=Attrition )) +
+  geom_col() +
+  scale_fill_viridis_d()+ylab("Monthly Income") +xlab("Attrition")+
+  ggtitle("Monthly Income by Attrition")
+#Attrition is higher for employees with lower monthly income/Salary
+
+#Monthly Income Vs Business Travel
+Empl %>%
+  ggplot(aes(x=BusinessTravel,y=Monthly.Income,fill=Attrition )) +
+  geom_col() +
+  scale_fill_viridis_d()+ylab("Monthly Income") +xlab("BusinessTravel")+
+  ggtitle("Monthly Income by BusinessTravel")
+#Monthly Income is higher for Travel-Rarely job.But the attrition rate is more for frequently travel jobs.
+
+#Monthly Income Vs Daily Rate
+Empl %>%
+  ggplot(aes(x=log(Daily.Rate), y=log(Monthly.Income), color=Attrition)) +
+  geom_point(position="jitter") +
+  scale_color_viridis_d() +geom_smooth(method = "lm")+ylab("Monthly Income") +xlab("Daily Rate")+
+  ggtitle("Monthly Income by Daily Rate")+ggtitle("Monthly Income By Daily Rate")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#Monthly Income and daily rate are not co-related to each other
+
+#Monthly Income Vs Department
+Empl %>%
+  ggplot(aes(x=Department,y=Monthly.Income,fill=Attrition )) +
+  geom_col() +
+  scale_fill_viridis_d()+ylab("Monthly Income") +xlab("Department")+
+  ggtitle("Monthly Income by Department")
+#Monthly Income is the highest for Research & Development and least for Human Resources.Attrition is highest for Human resources and Sales than Research & Development.
+
+##Monthly Income Vs Distance From Home
+Empl %>%
+  ggplot(aes(x=Distance.From.Home, y=log(Monthly.Income), color=Attrition)) +
+  geom_point(position="jitter") +
+  scale_color_viridis_d() +geom_smooth(method = "lm")+ylab("Monthly Income") +xlab("Distance From Home")+
+  ggtitle("Monthly Income by Distance From Home")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#Nothing interesting seen here
+
+#Monthly Income Vs Education
+Empl %>%
+  ggplot(aes(x=Education,y=Monthly.Income,fill=Attrition )) +
+  geom_col() +
+  scale_fill_viridis_d()+ylab("Monthly Income") +xlab("Education")+
+  ggtitle("Monthly Income by Education")
+#Monthly Income is the highest for Education level 3&4 and least for 5.
+
+#Monthly Income Vs Education Field
+Empl %>%
+  ggplot(aes(x=EducationField,y=Monthly.Income,fill=Attrition )) +
+  geom_col() +
+  scale_fill_viridis_d()+ylab("Monthly Income") +xlab("Education Field")+
+  ggtitle("Monthly Income by Education Field")
+#Monthly Income is the highest for Life sciences & Medical and Human resources is the least.
+
+#Monthly Income Vs Environment Satisfaction
+Empl %>%
+  ggplot(aes(x=Environment.Satisfaction,y=Monthly.Income,fill=Attrition )) +
+  geom_col() +
+  scale_fill_viridis_d()+ylab("Monthly Income") +xlab("Environment Satisfaction")+
+  ggtitle("Monthly Income by Environment Satisfaction")
+#Monthly Income is the highest for Environment Satisfaction is 3 & 4
+
+#Monthly Income Vs Gender
+Empl %>%
+  ggplot(aes(x=Gender,y=Monthly.Income,fill=Attrition )) +
+  geom_col() +
+  scale_fill_viridis_d()+ylab("Monthly Income") +xlab("Gender")+
+  ggtitle("Monthly Income by Gender")
+#Monthly Income is the higher for Male than Female
+
+#Monthly Income Vs Hourly Rate
+Empl %>%
+  ggplot(aes(x=log(Hourly.Rate), y=log(Monthly.Income), color=Attrition)) +
+  geom_point(position="jitter") +
+  scale_color_viridis_d() +geom_smooth(method = 'lm')+ylab("Monthly Income") +xlab("Hourly Rate")+
+  ggtitle("Monthly Income by Hourly Rate")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#Monthly Income and Hourly rate are not co-related to each other
+
+#Monthly Income Vs Job Involvement
+Empl %>%
+  ggplot(aes(x=Job.Involvement,y=Monthly.Income,fill=Attrition )) +
+  geom_col() +
+  scale_fill_viridis_d()+ylab("Monthly Income") +xlab("Job Involvement")+
+  ggtitle("Monthly Income by Job Involvement")
+#Monthly Income is the highest for Job involvement 3 and least for job involvement 1.Job attrition rate is highest for Job involvement for 1.
+
+#Monthly Income Vs Job Level
+Empl %>%
+  ggplot(aes(x=Job.Level,y=Monthly.Income,fill=Attrition )) +
+  geom_col() +
+  scale_fill_viridis_d()+ylab("Monthly Income") +xlab("Job Level")+
+  ggtitle("Monthly Income by Job Level")
+#Monthly Income is the highest for Job Level 2&3 and least for job Level 5.Job level attrition rate is highest for Job Level 1.
+
+#Monthly Income Vs Job Role
+Empl %>%
+  ggplot(aes(x=Job.Role,y=Monthly.Income,fill=Attrition )) +
+  geom_col() +
+  scale_fill_viridis_d()+ylab("Monthly Income") +xlab("Job Role")+
+  ggtitle("Monthly Income by Job Role")
+#Monthly Income is the highest for Sales Executive,Manager and Research Director and least for Human resource and Sales Rep.We understand that the attrition rate is highest for Human resources and Sales Rep.
+
+#Monthly Income Vs Job Satisfaction
+Empl %>%
+  ggplot(aes(x=Job.Satisfaction,y=Monthly.Income,fill=Attrition )) +
+  geom_col() +
+  scale_fill_viridis_d()+ylab("Monthly Income") +xlab("Job Satisfaction")+
+  ggtitle("Monthly Income by Job Satisfaction")
+#Monthly Income is the highest for Job Satisfaction 3 & 4
+
+#Monthly Income Vs Marital Status
+Empl %>%
+  ggplot(aes(x=Marital.Status,y=Monthly.Income,fill=Attrition )) +
+  geom_col() +
+  scale_fill_viridis_d()+ylab("Monthly Income") +xlab("Marital Status")+
+  ggtitle("Monthly Income by Marital Status")
+#Monthly Income is the higher for Married and least for divorced.
+
+#Monthly Income Vs Monthly Rate
+Empl %>%
+  ggplot(aes(x=log(Monthly.Rate), y=log(Monthly.Income), color=Attrition)) +
+  geom_point(position="jitter") +
+  scale_color_viridis_d() +geom_smooth(method = 'lm')+ylab("Monthly Income") +xlab("Monthly Rate")+
+  ggtitle("Monthly Income by Monthly Rate")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#Monthly Income and Hourly rate are not co-related to each other
+
+#Monthly Income Vs Num Companies Worked
+Empl %>%
+  ggplot(aes(x=as.factor(Num.Companies.Worked),y=Monthly.Income,fill=Attrition )) +
+  geom_col() +
+  scale_fill_viridis_d()+ylab("Monthly Income") +xlab("Num Companies Worked")+
+  ggtitle("Monthly Income by Num Companies Worked")
+#Monthly Income is the highest for those who worked in 1 company
+
+#Monthly Income Vs OverTime
+Empl %>%
+  ggplot(aes(x=OverTime,y=Monthly.Income,fill=Attrition )) +
+  geom_col() +
+  scale_fill_viridis_d()+ylab("Monthly Income") +xlab("OverTime")+
+  ggtitle("Monthly Income by OverTime")
+#Monthly Income is the higher for those who worked overtime.
+
+#Monthly Income Vs Percent Salary Hike
+Empl %>%
+  ggplot(aes(x=log(Percent.Salary.Hike), y=log(Monthly.Income), color=Attrition)) +
+  geom_point() +
+  scale_color_viridis_d() +geom_smooth(method = "lm")+ylab("Monthly Income") +xlab("Percent Salary Hike")+
+  ggtitle("Monthly Income by Percent Salary Hike")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#Monthly Income and Percent Salary Hike are not co-related to each other
+
+#Monthly Income Vs Performance Rating
+Empl %>%
+  ggplot(aes(x=as.factor(Performance.Rating),y=Monthly.Income,fill=Attrition )) +
+  geom_col() +
+  scale_fill_viridis_d()+ylab("Monthly Income") +xlab("Performance Rating")+
+  ggtitle("Monthly Income by Performance Rating")
+#Monthly Income is the highest for those who have a performance rating 3.
+
+#Monthly Income Vs Relationship Satisfaction
+Empl %>%
+  ggplot(aes(x=as.factor(Relationship.Satisfaction),y=Monthly.Income,fill=Attrition )) +
+  geom_col() +
+  scale_fill_viridis_d()+ylab("Monthly Income") +xlab("Relationship Satisfaction")+
+  ggtitle("Monthly Income by Relationship Satisfaction")
+#Monthly Income is the highest for those who have a Relationship Satisfaction 3&4.
+
+#Monthly Income Vs Stock Option Level
+Empl %>%
+  ggplot(aes(x=as.factor(Stock.Option.Level),y=Monthly.Income,fill=Attrition )) +
+  geom_col() +
+  scale_fill_viridis_d()+ylab("Monthly Income") +xlab("Stock Option Level")+
+  ggtitle("Monthly Income by Stock Option Level")
+#Monthly Income is the highest for those who have a Stock Option Level 0 & 1.
+
+#Monthly Income Vs Total Working Years
+Empl %>%
+  ggplot(aes(x=log(Total.Working.Years), y=log(Monthly.Income), color=Attrition)) +
+  geom_point(position="jitter") +
+  scale_color_viridis_d() +geom_smooth(method = "lm")+ylab("Monthly Income") +xlab("Total Working Years")+
+  ggtitle("Monthly Income by Total Working Years")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#Monthly Income and Total Working Years are linearly co-related to each other
+
+#Monthly Income Vs Training Times Last Year
+Empl %>%
+  ggplot(aes(x=as.factor(Training.Times.Last.Year),y=Monthly.Income,fill=Attrition )) +
+  geom_col() +
+  scale_fill_viridis_d()+ylab("Monthly Income") +xlab("Training Times Last Year")+
+  ggtitle("Monthly Income by Training Times Last Year")
+#Monthly Income is the highest for those who have a Training Times Last Year 2&3.
+
+#Monthly Income Vs Work Life Balance
+Empl %>%
+  ggplot(aes(x=as.factor(Work.Life.Balance),y=Monthly.Income,fill=Attrition )) +
+  geom_col() +
+  scale_fill_viridis_d()+ylab("Monthly Income") +xlab("Work Life Balance")+
+  ggtitle("Monthly Income by Work Life Balance")
+#Monthly Income is the higher for those who have a Work Life Balance 3.
+
+#Monthly Income Vs Years At Company
+Empl %>%
+  ggplot(aes(x=log(Years.At.Company), y=log(Monthly.Income), color=Attrition)) +
+  geom_point(position="jitter") +
+  scale_color_viridis_d() +geom_smooth(method = "lm")+ylab("Monthly Income") +xlab("Years At Company")+
+  ggtitle("Monthly Income by Years At Company")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#Monthly Income and Total Working Years are linearly co-related to each other
+
+#Monthly Income Vs Years In Current Role
+Empl %>%
+  ggplot(aes(x=Years.In.Current.Role, y=log(Monthly.Income), color=Attrition)) +
+  geom_point(position="jitter") +
+  scale_color_viridis_d() +geom_smooth(method = "lm")+ylab("Monthly Income") +xlab("Total Working Years")+
+  ggtitle("Monthly Income by Years In Current Role")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#Monthly Income and Years In Current Role are linearly co-related to each other
+
+#Monthly Income Vs Years Since Last Promotion
+Empl %>%
+  ggplot(aes(x=Years.Since.Last.Promotion, y=log(Monthly.Income), color=Attrition)) +
+  geom_point(position="jitter") +
+  scale_color_viridis_d() +geom_smooth(method = "lm")+ylab("Monthly Income") +xlab("Years Since Last Promotion")+
+  ggtitle("Monthly Income by Years Since Last Promotion")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#Monthly Income and Years Since Last Promotion are linearly co-related to each other
+
+#Monthly Income Vs Years With Curr Manager
+Empl %>%
+  ggplot(aes(x=Years.With.Curr.Manager, y=log(Monthly.Income), color=Attrition)) +
+  geom_point(position="jitter") +
+  scale_color_viridis_d() +geom_smooth(method = "lm")+ylab("Monthly Income") +xlab("Years With Curr Manager")+
+  ggtitle("Monthly Income by Years With Curr Manager")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+#Monthly Income and Years With Current Manager are linearly co-related to each other
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r Outlier}
+#The outlier seen is at working years = 40.Removing the outlier.
+Empl = subset(Empl, Total.Working.Years != 40)
+str(Empl)
+```
+
+
+```{r cor relation}
+# Correlations between continuous variable
+# Exploring multicollinearity
+#str(Empl)
+#pairs(Empl[,c(2,5,7,8,10,11,12,14,15,16,18,20,21,22,25,26,27,28,29,30,31,32,33,34,35)])
+#my.cor<-cor(Empl[,c(2,5,7,8,10,11,12,14,15,16,18,20,21,22,25,26,27,28,29,30,31,32,33,34,35)])
+#my.cor
+#ggcorrplot(my.cor,  type = "lower",
+ #          lab = TRUE, lab_size = 3, method = "circle",
+#           colors = c("tomato2", "white", "springgreen3"),
+#           title = "Correlations of all relevant variables",
+#           ggtheme = theme_bw())
+
+#Selecting certain predictors to look at it more closely
+pairs(Empl[,c(2,7,8,12,15,16,18,20,21,22,25,26,27,30,32,33,34,35)])
+my.cor<-cor(Empl[,c(2,7,8,12,15,16,18,20,21,22,25,26,27,30,32,33,34,35)])
+my.cor
+ggcorrplot(my.cor,  type = "lower",
+           lab = TRUE, lab_size = 3, method = "circle",
+           colors = c("tomato2", "white", "springgreen3"),
+           title = "Correlations of all relevant variables",
+           ggtheme = theme_bw())
+#1.Job Level and Monthly Income are highly positively correlated (0.95)
+#2.Percent Salary Hike and Performance Rating are highly positively correlated (0.78)
+#3.Monthly Income and Total Years of working is highly positively correlated (0.78)
+#4.Job Level and Total Years of Working is highly positively correlated (0.78)
+#5.Years at company and Years in current role is highly positively correlated (0.78)
+#6.Age and TOtal Working Years is positively correlated (0.65)
+#7.Years at company and Years since last promotion is positively correlated (0.64)
+#8.Total working years and years at company is positively correlated (0.63)
+#9.Years in current role and Years since last promotion is positively correlated (0.55)
+#10.Job Level and years at company is positively correlated (0.52)
+```
+
+```{r Heatmap}
+# Heatmap
+my.cor<-cor(Empl[,c(2,7,8,12,15,16,18,20,21,22,25,26,27,30,32,33,34,35)])
+heatmap.2(my.cor,col=redgreen(75), 
+          density.info="none", trace="none", dendrogram=c("row"), 
+          symm=F,symkey=T,symbreaks=T, scale="none")
+```
+
+```{r normality}
+# Normality will be a concern for LDA/QDA:
+hist(Empl$Age) #Looks Normal
+hist(log(Empl$Daily.Rate)) #Looks good after log transform
+hist((Empl$Distance.From.Home)) #skewed
+hist((Empl$Education)) #Doesnt look great
+hist(log(Empl$Hourly.Rate)) #skewed after log transform
+hist((Empl$Environment.Satisfaction))#Not good
+hist(Empl$Job.Involvement) #Not good
+hist((Empl$Job.Level)) #Doesnt look great
+hist(Empl$Job.Satisfaction) #Doesnt look great
+hist((Empl$Monthly.Income))#Normal
+hist(log(Empl$Monthly.Rate))#Not Bad
+hist((Empl$Num.Companies.Worked))#Not Bad
+hist((Empl$Percent.Salary.Hike))#Not Bad
+hist((Empl$Performance.Rating))#Doesnt look great
+hist((Empl$Relationship.Satisfaction))#Doesnt look great
+hist((Empl$Stock.Option.Level))#Doesnt look great
+hist(log(Empl$Total.Working.Years)) #Normal after taking a log
+hist(log(Empl$Training.Times.Last.Year))#Doesnt look great
+hist((Empl$Work.Life.Balance))#Doesnt look great
+hist((Empl$Years.At.Company)) #Skwewd after taking a log
+hist((Empl$Years.In.Current.Role)) #slightly skewed
+hist((Empl$Years.Since.Last.Promotion))#skewed
+hist((Empl$Years.With.Curr.Manager))#skewed
+
+#Normality looks good for the below:
+#Age
+#log(Daily.Rate)
+#Hourly Rate
+#log(Monthly.Income)
+#log(Total.Working.Years)
+#log(Years.At.Company)
+#Years.In.Current.Role
+#Years.Since.Last.Promotion
+#Years.With.Curr.Manager
+```
+
+```{r train test}
+# train test split
+# 80/20 would be: 695:174
+set.seed(1234)
+
+sampleSizeTrain   <- floor(.80   * nrow(Empl))
+sampleSizeTest <- floor(.20       * nrow(Empl))
+
+indicesTrain    <- sort(sample(seq_len(nrow(Empl)), size=sampleSizeTrain))
+indicesNotTest<- setdiff(seq_len(nrow(Empl)), sampleSizeTrain)
+indicesTest<- sort(sample(seq_len(nrow(Empl)), size=sampleSizeTest))
+
+Train   <- Empl[indicesTrain, ]
+Test       <- Empl[indicesTest, ]
+
+dim(Train)
+dim(Test)
+
+testASEfwd<-c()
+testASEbwd<-c()
+testASEstp<-c()
+testASEsimp1<-c()
+testASEsimp2<-c()
+```
+
+```{r MLR}
+
+set.seed(1234)
+##### Null Model #######
+EmplTrain<-Train%>%select(Age,Attrition,BusinessTravel,Department,Daily.Rate,Distance.From.Home,Education,EducationField,Environment.Satisfaction,Gender,(Hourly.Rate),(Monthly.Income),Job.Involvement,Job.Level,Job.Role,Job.Satisfaction,Marital.Status,(Monthly.Rate),Num.Companies.Worked,OverTime,Percent.Salary.Hike,Performance.Rating,Relationship.Satisfaction,Stock.Option.Level,(Total.Working.Years),Training.Times.Last.Year,Work.Life.Balance,(Years.At.Company),Years.In.Current.Role,Years.Since.Last.Promotion,Years.With.Curr.Manager)
+
+EmplTest<-Test%>%select(Age,Attrition,BusinessTravel,Department,Daily.Rate,Distance.From.Home,Education,EducationField,Environment.Satisfaction,Gender,(Hourly.Rate),Monthly.Income,Job.Involvement,Job.Level,Job.Role,Job.Satisfaction,Marital.Status,Monthly.Rate,Num.Companies.Worked,OverTime,Percent.Salary.Hike,Performance.Rating,Relationship.Satisfaction,Stock.Option.Level,(Total.Working.Years),Training.Times.Last.Year,Work.Life.Balance,(Years.At.Company),Years.In.Current.Role,Years.Since.Last.Promotion,Years.With.Curr.Manager)
+
+dim(EmplTrain)
+dim(EmplTest)
+
+Model_Null<-lm(log(Monthly.Income)~.,data=EmplTrain)  # . means all variable not mpg
+summary(Model_Null)
+
+vif(Model_Null)
+#Department and Job.Role have a greater vif > 10 so we can try rerunning without these 2 predictors. Also taking a log on Monthly Income makes the residual charts look better especially the qq plot, histogram and the cooks D.All the observations are below 0.02 so we are good.The QQ plot is a straigh line and the histogram is a nice bell shaped curve displaying normality.
+
+#Outlier:
+#Outliers seen are the below observations:
+Train = subset(Train, ID != 365) 
+Train = subset(Train, ID != 458)
+Train = subset(Train, ID != 364)
+Train = subset(Train, ID != 266)
+Train = subset(Train, ID != 265)
+Train = subset(Train, ID != 254)
+Train = subset(Train, ID != 253)
+
+par(mfrow=c(1,5))
+ols_plot_resid_fit(Model_Null)
+ols_plot_resid_lev(Model_Null)
+ols_plot_resid_qq(Model_Null)
+ols_plot_resid_hist(Model_Null)
+ols_plot_cooksd_bar(Model_Null)
+#Business Travel Rarely, Daily Rates,Job Level,Laboratory Technician,Research #Director, Research Scientist,Sales #Representative,Number of companies #worked,overtime,Total.Working.Years,Years.In.Current.Role are statistically #significant.
+
+#Prediction
+Pred_Full=predict(Model_Null , newdata = EmplTest, interval = "confidence")
+
+as.data.frame(Pred_Full)
+MSPE = data.frame(Observed = log(EmplTest$Monthly.Income), Predicted = Pred_Full)
+MSPE$Resisdual = MSPE$Observed - MSPE$Predicted.fit
+MSPE$SquaredResidual = MSPE$Resisdual^2
+MSPE
+mean(MSPE$SquaredResidual)
+
+##Removing Job ROle and Department and removing outliers
+EmplTrain<-Train%>%select(Age,Attrition,BusinessTravel,Daily.Rate,Distance.From.Home,Education,EducationField,Environment.Satisfaction,Gender,(Hourly.Rate),(Monthly.Income),Job.Involvement,Job.Level,Job.Satisfaction,Marital.Status,(Monthly.Rate),Num.Companies.Worked,OverTime,Percent.Salary.Hike,Performance.Rating,Relationship.Satisfaction,Stock.Option.Level,(Total.Working.Years),Training.Times.Last.Year,Work.Life.Balance,(Years.At.Company),Years.In.Current.Role,Years.Since.Last.Promotion,Years.With.Curr.Manager)
+
+EmplTest<-Test%>%select(Age,Attrition,BusinessTravel,Daily.Rate,Distance.From.Home,Education,EducationField,Environment.Satisfaction,Gender,(Hourly.Rate),(Monthly.Income),Job.Involvement,Job.Level,Job.Satisfaction,Marital.Status,(Monthly.Rate),Num.Companies.Worked,OverTime,Percent.Salary.Hike,Performance.Rating,Relationship.Satisfaction,Stock.Option.Level,(Total.Working.Years),Training.Times.Last.Year,Work.Life.Balance,(Years.At.Company),Years.In.Current.Role,Years.Since.Last.Promotion,Years.With.Curr.Manager)
+
+dim(EmplTest)
+dim(EmplTrain)
+
+Model_Null<-lm(log(Monthly.Income)~.,data=EmplTrain)  # . means all variable not mpg
+summary(Model_Null)
+
+vif(Model_Null)
+par(mfrow=c(1,5))
+ols_plot_resid_fit(Model_Null)
+ols_plot_resid_lev(Model_Null)
+ols_plot_resid_qq(Model_Null)
+ols_plot_resid_hist(Model_Null)
+ols_plot_cooksd_bar(Model_Null)
+#Assumptions are met:
+#The histogram shows a bell shape curve which suggests that there is enough evidence for normality.
+#The QQ Plot shows a straight line which suggests that there is enough evidence for constant variance.
+#The ouliers are all below 0.2 which suggests there is not major high leverage points.
+#The observations are considered to be independent as they are randomly assigned.
+#Business Travel Rarely, Daily Rates,Job Level,Laboratory Technician,Research #Director, Research Scientist,Sales #Representative,Number of companies #worked,overtime,Total.Working.Years,Years.In.Current.Role are statistically #significant.
+
+#Prediction
+Pred_Null=predict(Model_Null , newdata = EmplTest, interval = "confidence")
+
+as.data.frame(Pred_Null)
+MSPE = data.frame(Observed = log(EmplTest$Monthly.Income), Predicted = Pred_Null)
+MSPE$Resisdual = MSPE$Observed - MSPE$Predicted.fit
+MSPE$SquaredResidual = MSPE$Resisdual^2
+MSPE
+mean(MSPE$SquaredResidual)
+
+##### Forward Model #####
+#Forward:
+Model_FWD<-stepAIC(Model_Null,direction="forward",trace=FALSE)
+summary(Model_FWD)
+
+vif(Model_FWD)
+#Residual Plots
+par(mfrow=c(1,5))
+ols_plot_resid_fit(Model_FWD)
+ols_plot_resid_lev(Model_FWD)
+ols_plot_resid_qq(Model_FWD)
+ols_plot_resid_hist(Model_FWD)
+ols_plot_cooksd_bar(Model_FWD)
+#Assumptions are met:
+#The histogram shows a bell shape curve which suggests that there is enough evidence for normality.
+#The QQ Plot shows a straight line which suggests that there is enough evidence for constant variance.
+#The ouliers are all below 0.2 which suggests there is not major high leverage points.
+#The observations are considered to be independent as they are randomly assigned.
+#Business Travel Rarely, Daily Rates,Job Level,Laboratory Technician,Research #Director, Research Scientist,Sales #Representative,Number of companies #worked,overtime,Total.Working.Years,Years.In.Current.Role are statistically #significant.
+
+#Prediction
+Pred_FWD=predict(Model_FWD, newdata = EmplTest, interval = "confidence")
+as.data.frame(Pred_FWD)
+MSPE = data.frame(Observed = log(EmplTest$Monthly.Income), Predicted = Pred_FWD)
+MSPE$Resisdual = MSPE$Observed - MSPE$Predicted.fit
+MSPE$SquaredResidual = MSPE$Resisdual^2
+MSPE
+mean(MSPE$SquaredResidual)
+
+reg.fwd=regsubsets(log(Monthly.Income)~.,data=EmplTrain,method="forward",nvmax=29)
+k<-ols_step_forward_aic(Model_Null, details = TRUE)
+par(mfrow=c(1,3))
+plot(k$aics,xlab="No of Predictors",ylab="AICS", col = "red")
+plot(k$arsq,xlab="No of Predictors",ylab="AdjR2", col = "red")
+plot(k$rsq,xlab="No of Predictors",ylab="RMSE", col = "red")
+k$predictors
+
+#Plot for AISC
+for (i in 1:29){
+  predictions<-predict(object=Model_FWD,newdata=EmplTest,id=i) 
+  testASEfwd[i]<-mean((log(EmplTest$Monthly.Income)-predictions)^2)
+}
+dim(EmplTest)
+
+par(mfrow=c(1,1))
+plot(1:29,testASEfwd,type="l",xlab="# of predictors",ylab="test vs train ASE",ylim=c(0,0.5))
+index<-which(testASEfwd==min(testASEfwd))
+points(index,testASEfwd[index],col="red",pch=10)
+rss<-summary(reg.fwd)$rss
+lines(index,rss/869,col="blue")  #Dividing by 869 since ASE=RSS/sample size
+
+##### Backward Model #####
+
+Model_BCK<-stepAIC(Model_Null,direction="backward",trace=FALSE)
+summary(Model_BCK)
+
+vif(Model_BCK)
+#Residual Plots
+par(mfrow=c(1,5))
+ols_plot_resid_fit(Model_BCK)
+ols_plot_resid_lev(Model_BCK)
+ols_plot_resid_qq(Model_BCK)
+ols_plot_resid_hist(Model_BCK)
+ols_plot_cooksd_bar(Model_BCK)
+
+#Assumptions are met:
+#The histogram shows a bell shape curve which suggests that there is enough evidence for normality.
+#The QQ Plot shows a straight line which suggests that there is enough evidence for constant variance.
+#The ouliers are all below 0.2 which suggests there is not major high leverage points.
+#The observations are considered to be independent as they are randomly assigned.
+#Business Travel Rarely, Daily Rates,Job Level,Laboratory Technician,Research #Director, Research Scientist,Sales #Representative,Number of companies #worked,overtime,Total.Working.Years,Years.In.Current.Role are statistically #significant.
+
+#Prediction
+Pred_BCK=predict(Model_BCK, newdata = EmplTest, interval = "confidence")
+as.data.frame(Pred_BCK)
+MSPE = data.frame(Observed = log(EmplTest$Monthly.Income), Predicted = Pred_BCK)
+MSPE$Resisdual = MSPE$Observed - MSPE$Predicted.fit
+MSPE$SquaredResidual = MSPE$Resisdual^2
+MSPE
+mean(MSPE$SquaredResidual)
+
+reg.bck=regsubsets(log(Monthly.Income)~.,data=EmplTrain,method="backward",nvmax=29)
+k<-ols_step_backward_aic(Model_Null, details = TRUE)
+par(mfrow=c(1,3))
+plot(k$aics,xlab="No of Predictors",ylab="AICS", col = "red")
+plot(k$arsq,xlab="No of Predictors",ylab="AdjR2", col = "red")
+plot(k$rsq,xlab="No of Predictors",ylab="RMSE", col = "red")
+k$predictors
+
+for (i in 1:29){
+  predictions<-predict(object=Model_BCK,newdata=EmplTest,id=i) 
+  testASEbwd[i]<-mean((log(EmplTest$Monthly.Income)-predictions)^2)
+}
+
+dim(EmplTest)
+
+par(mfrow=c(1,1))
+plot(1:29,testASEbwd,type="l",xlab="# of predictors",ylab="test vs train ASE",ylim=c(0,0.8))
+index<-which(testASEbwd==min(testASEbwd))
+points(index,testASEbwd[index],col="red",pch=10)
+rss<-summary(reg.fwd)$rss
+lines(index,rss/869,col="blue")  #Dividing by 869 since ASE=RSS/sample size
+
+##### Stepwise Model #####
+Model_Step<-stepAIC(Model_Null,trace=FALSE)
+summary(Model_Step)
+
+vif(Model_Step)
+#Residual Plots
+par(mfrow=c(1,5))
+ols_plot_resid_fit(Model_Step)
+ols_plot_resid_lev(Model_Step)
+ols_plot_resid_qq(Model_Step)
+ols_plot_resid_hist(Model_Step)
+ols_plot_cooksd_bar(Model_Step)
+
+#Assumptions are met:
+#The histogram shows a bell shape curve which suggests that there is enough evidence for normality.
+#The QQ Plot shows a straight line which suggests that there is enough evidence for constant variance.
+#The observations are considered to be independent as they are randomly assigned.
+#The outlier at 255 seems to be seen only in this model. Leaving it in the dataset for now.
+#Business Travel Rarely, Daily Rates,Job Level,Laboratory Technician,Research #Director, Research Scientist,Sales #Representative,Number of companies #worked,overtime,Total.Working.Years,Years.In.Current.Role are statistically #significant.
+
+#Prediction
+Pred_STP=predict(Model_Step, newdata = EmplTest, interval = "confidence")
+as.data.frame(Pred_STP)
+MSPE = data.frame(Observed = log(EmplTest$Monthly.Income), Predicted = Pred_STP)
+MSPE$Resisdual = MSPE$Observed - MSPE$Predicted.fit
+MSPE$SquaredResidual = MSPE$Resisdual^2
+MSPE
+mean(MSPE$SquaredResidual)
+
+reg.stp=regsubsets(log(Monthly.Income)~.,data=EmplTrain,method="seqrep",nvmax=29)
+k<-ols_step_both_aic(Model_Null, details = TRUE)
+par(mfrow=c(1,3))
+#plot(k$aics,xlab="No of Predictors",ylab="AICS", col = "red")
+plot(k$arsq,xlab="No of Predictors",ylab="AdjR2", col = "red")
+plot(k$rsq,xlab="No of Predictors",ylab="RMSE", col = "red")
+k$predictors
+
+#Plot for AISC
+for (i in 1:29){
+  predictions<-predict(object=Model_Step,newdata=EmplTest,id=i) 
+  testASEstp[i]<-mean((log(EmplTest$Monthly.Income)-predictions)^2)
+}
+
+dim(EmplTest)
+
+par(mfrow=c(1,1))
+plot(1:29,testASEstp,type="l",xlab="# of predictors",ylab="test vs train ASE",ylim=c(0,0.8))
+index<-which(testASEstp==min(testASEstp))
+points(index,testASEstp[index],col="red",pch=10)
+rss<-summary(reg.fwd)$rss
+lines(index,rss/869,col="blue")  #Dividing by 869 since ASE=RSS/sample size
+
+##### Simple Model1 ##### Using Squared variable
+
+EmplTrainSimp1<-Train%>%select(Age,Attrition,BusinessTravel,Distance.From.Home,Education,EducationField,Environment.Satisfaction,Gender,(Monthly.Income),Job.Involvement,Job.Level,Job.Satisfaction,Marital.Status,Num.Companies.Worked,OverTime,Performance.Rating,Relationship.Satisfaction,(Total.Working.Years),Work.Life.Balance,Years.In.Current.Role,Years.Since.Last.Promotion,Years.With.Curr.Manager)
+
+EmplTestSimp1<-Test%>%select(Age,Attrition,BusinessTravel,Distance.From.Home,Education,EducationField,Environment.Satisfaction,Gender,(Monthly.Income),Job.Involvement,Job.Level,Job.Satisfaction,Marital.Status,Num.Companies.Worked,OverTime,Performance.Rating,Relationship.Satisfaction,(Total.Working.Years),Work.Life.Balance,Years.In.Current.Role,Years.Since.Last.Promotion,Years.With.Curr.Manager)
+
+dim(EmplTrainSimp1)
+dim(EmplTestSimp1)
+
+Model_Simp1<-lm(log(Monthly.Income)~Age+Attrition+BusinessTravel+Distance.From.Home+Education+EducationField+Environment.Satisfaction+Gender+Job.Involvement+Job.Level+Job.Satisfaction+Marital.Status+Num.Companies.Worked+OverTime+Performance.Rating+Relationship.Satisfaction+(Total.Working.Years)+Work.Life.Balance+Years.In.Current.Role+(Years.In.Current.Role)^2+Years.Since.Last.Promotion+Years.With.Curr.Manager,data=EmplTrainSimp1)
+  
+summary(Model_Simp1)
+
+vif(Model_Simp1)
+par(mfrow=c(1,5))
+ols_plot_resid_fit(Model_Simp1)
+ols_plot_resid_lev(Model_Simp1)
+ols_plot_resid_qq(Model_Simp1)
+ols_plot_resid_hist(Model_Simp1)
+ols_plot_cooksd_bar(Model_Simp1)
+#Assumptions are met:
+#The histogram shows a bell shape curve which suggests that there is enough evidence for normality.
+#The QQ Plot shows a straight line which suggests that there is enough evidence for constant variance.
+#The observations are considered to be independent as they are randomly assigned.
+#Business Travel Rarely, Daily Rates,Job Level,Laboratory Technician,Research #Director, Research Scientist,Sales #Representative,Number of companies #worked,overtime,Total.Working.Years,Years.In.Current.Role are statistically #significant.
+#The outlier at 255 seems to be seen only in this model. Leaving it in the dataset for now.
+
+#Prediction
+Pred_Simp1=predict(Model_Simp1, newdata = EmplTestSimp1, interval = "confidence")
+as.data.frame(Pred_Simp1)
+MSPE = data.frame(Observed = log(EmplTestSimp1$Monthly.Income), Predicted = Pred_Simp1)
+MSPE$Resisdual = MSPE$Observed - MSPE$Predicted.fit
+MSPE$SquaredResidual = MSPE$Resisdual^2
+MSPE
+mean(MSPE$SquaredResidual)
+
+reg.smp1=regsubsets(log(Monthly.Income)~Age+Attrition+BusinessTravel+Distance.From.Home+Education+EducationField+Environment.Satisfaction+Gender+Job.Involvement+Job.Level+Job.Satisfaction+Marital.Status+Num.Companies.Worked+OverTime+Performance.Rating+Relationship.Satisfaction+(Total.Working.Years)+Work.Life.Balance+Years.In.Current.Role+(Years.In.Current.Role)^2+Years.Since.Last.Promotion+Years.With.Curr.Manager,data=EmplTrainSimp1,method="forward",nvmax=29)
+
+k<-ols_step_forward_aic(Model_Simp1, details = TRUE)
+par(mfrow=c(1,3))
+plot(k$aics,xlab="No of Predictors",ylab="AICS", col = "red")
+plot(k$arsq,xlab="No of Predictors",ylab="AdjR2", col = "red")
+plot(k$rsq,xlab="No of Predictors",ylab="RMSE", col = "red")
+k$predictors
+
+#Plot for AISC
+for (i in 1:27){
+  predictions<-predict(object=Model_Simp1,newdata=EmplTestSimp1,id=i) 
+  testASEsimp1[i]<-mean((log(EmplTestSimp1$Monthly.Income)-predictions)^2)
+}
+
+par(mfrow=c(1,1))
+plot(1:27,testASEsimp1,type="l",xlab="# of predictors",ylab="test vs train ASE",ylim=c(0,0.8))
+index<-which(testASEsimp1==min(testASEsimp1))
+points(index,testASEsimp1[index],col="red",pch=10)
+rss<-summary(reg.smp1)$rss
+lines(index,rss/869,col="blue")  #Dividing by 869 since ASE=RSS/sample size
+
+##### Simple Model2 ##### Using Interaction and Squared variable
+
+EmplTrainSimp2<-Train%>%select(Age,Attrition,BusinessTravel,Distance.From.Home,Education,EducationField,Environment.Satisfaction,Gender,(Monthly.Income),Job.Involvement,Job.Level,Job.Satisfaction,Marital.Status,Num.Companies.Worked,OverTime,Performance.Rating,Relationship.Satisfaction,(Total.Working.Years),Work.Life.Balance,Years.In.Current.Role,Years.Since.Last.Promotion,Years.With.Curr.Manager)
+
+EmplTestSimp2<-Test%>%select(Age,Attrition,BusinessTravel,Distance.From.Home,Education,EducationField,Environment.Satisfaction,Gender,(Monthly.Income),Job.Involvement,Job.Level,Job.Satisfaction,Marital.Status,Num.Companies.Worked,OverTime,Performance.Rating,Relationship.Satisfaction,(Total.Working.Years),Work.Life.Balance,Years.In.Current.Role,Years.Since.Last.Promotion,Years.With.Curr.Manager)
+
+dim(EmplTrainSimp2)
+dim(EmplTestSimp2)
+
+Model_Simp2<-lm(log(Monthly.Income)~Age+Attrition+BusinessTravel+Distance.From.Home+Education+EducationField+Environment.Satisfaction+Gender+Job.Involvement+Job.Level+Job.Satisfaction+Marital.Status+Num.Companies.Worked+OverTime+Performance.Rating+Relationship.Satisfaction+(Total.Working.Years)+Work.Life.Balance+Years.In.Current.Role+(Years.In.Current.Role)^2+Years.Since.Last.Promotion+Years.With.Curr.Manager,Age*Total.Working.Years,data=EmplTrainSimp2)
+ 
+summary(Model_Simp2)
+
+vif(Model_Simp2)
+par(mfrow=c(1,5))
+ols_plot_resid_fit(Model_Simp2)
+ols_plot_resid_lev(Model_Simp2)
+ols_plot_resid_qq(Model_Simp2)
+ols_plot_resid_hist(Model_Simp2)
+ols_plot_cooksd_bar(Model_Simp2)
+#Assumptions are met:
+#The histogram shows a bell shape curve which suggests that there is enough evidence for normality.
+#The QQ Plot shows a straight line which suggests that there is enough evidence for constant variance.
+#The observations are considered to be independent as they are randomly assigned.
+#Business Travel Rarely, Daily Rates,Job Level,Laboratory Technician,Research #Director, Research Scientist,Sales #Representative,Number of companies #worked,overtime,Total.Working.Years,Years.In.Current.Role are statistically #significant.
+#The outlier at below 0.02 so we are good.
+
+#Prediction
+Pred_Simp2=predict(Model_Simp2, newdata = EmplTestSimp2, interval = "confidence")
+as.data.frame(Pred_Simp2)
+MSPE = data.frame(Observed = log(EmplTestSimp1$Monthly.Income), Predicted = Pred_Simp1)
+MSPE$Resisdual = MSPE$Observed - MSPE$Predicted.fit
+MSPE$SquaredResidual = MSPE$Resisdual^2
+MSPE
+mean(MSPE$SquaredResidual)
+
+reg.smp2=regsubsets(log(Monthly.Income)~Age+Attrition+BusinessTravel+Distance.From.Home+Education+EducationField+Environment.Satisfaction+Gender+Job.Involvement+Job.Level+Job.Satisfaction+Marital.Status+Num.Companies.Worked+OverTime+Performance.Rating+Relationship.Satisfaction+(Total.Working.Years)+Work.Life.Balance+Years.In.Current.Role+(Years.In.Current.Role)^2+Years.Since.Last.Promotion+Years.With.Curr.Manager+Age*Total.Working.Years,data=EmplTrainSimp2,method="forward",nvmax=27)
+
+k<-ols_step_forward_aic(Model_Simp2, details = TRUE)
+par(mfrow=c(1,3))
+plot(k$aics,xlab="No of Predictors",ylab="AICS", col = "red")
+plot(k$arsq,xlab="No of Predictors",ylab="AdjR2", col = "red")
+plot(k$rsq,xlab="No of Predictors",ylab="RMSE", col = "red")
+k$predictors
+
+#Plot for AISC
+for (i in 1:27){
+  predictions<-predict(object=Model_Simp2,newdata=EmplTestSimp2,id=i) 
+  testASEsimp2[i]<-mean((log(EmplTestSimp2$Monthly.Income)-predictions)^2)
+}
+par(mfrow=c(1,1))
+plot(1:27,testASEsimp2,type="l",xlab="# of predictors",ylab="test vs train ASE",ylim=c(0,0.8))
+index<-which(testASEsimp2==min(testASEsimp2))
+points(index,testASEsimp2[index],col="red",pch=10)
+rss<-summary(reg.smp2)$rss
+lines(index,rss/869,col="blue")  #Dividing by 869 since ASE=RSS/sample size
+```
+
+
+```{r Prediction}
+#Forward
+Empl_Nosal_Pred<-Empl_nosal%>%select(Age,Attrition,BusinessTravel,Daily.Rate,Distance.From.Home,Education,EducationField,Environment.Satisfaction,Gender,(Hourly.Rate),Job.Involvement,Job.Level,Job.Satisfaction,Marital.Status,(Monthly.Rate),Num.Companies.Worked,OverTime,Percent.Salary.Hike,Performance.Rating,Relationship.Satisfaction,Stock.Option.Level,(Total.Working.Years),Training.Times.Last.Year,Work.Life.Balance,(Years.At.Company),Years.In.Current.Role,Years.Since.Last.Promotion,Years.With.Curr.Manager)
+Pred_Nosal_FWD=predict(Model_FWD, newdata = Empl_Nosal_Pred, interval = "confidence")
+data.frame(Pred_Nosal_FWD)
+write.csv(data.frame(Pred_Nosal_FWD),'C:/Sowmya/SMU/04_Doing Data Science/Unit-14 & Unit-15/CaseStudy2Predict_Salary_FWD.csv')
+Pred_Nosal_BCK=predict(Model_BCK, newdata = Empl_Nosal_Pred, interval = "confidence")
+data.frame(Pred_Nosal_BCK)
+write.csv(data.frame(Pred_Nosal_BCK),'C:/Sowmya/SMU/04_Doing Data Science/Unit-14 & Unit-15/CaseStudy2Predict_Salary_BCK.csv')
+Pred_Nosal_Step=predict(Model_Step, newdata = Empl_Nosal_Pred, interval = "confidence")
+data.frame(Pred_Nosal_Step)
+write.csv(data.frame(Pred_Nosal_Step),'C:/Sowmya/SMU/04_Doing Data Science/Unit-14 & Unit-15/CaseStudy2Predict_Salary_Step.csv')
+```
+
+
+```{r Knn}
+#Classification
+##Train - 695 : Test - 174
+##### knn - K-Nearest Neighbors ##### 
+
+set.seed(32) 
+iterations = 100
+accs = data.frame(accuracy = numeric(30), k = numeric(30))
+
+splitPerc = .80
+TrainIndicesKnn = sample(seq(1:length(Empl$Attrition)),round(splitPerc * length(Empl$Attrition)))
+TrainKnn = Empl[TrainIndicesKnn,]
+TestKnn = Empl[-TrainIndicesKnn,]
+
+
+TrainKnn<-na.omit(TrainKnn)
+TestKnn<-na.omit(TestKnn)
+
+dim(TrainKnn)
+dim(TestKnn)
+
+
+for(i in 1:30)
+{
+modelKNN = class::knn(TrainKnn[,c(2,5,7,8,12,14,15,16,18,20,21,22,25,26,27,29,30,31,32,33,34,35,36)],TestKnn[,c(2,5,7,8,12,14,15,16,18,20,21,22,25,26,27,29,30,31,32,33,34,35,36)],(TrainKnn$Attrition),k=i,prob=TRUE)
+table(modelKNN,TestKnn$Attrition)
+CM = confusionMatrix(table(modelKNN,TestKnn$Attrition))
+   accs$accuracy[i] = CM$overall[1]
+  accs$k[i] = i
+}
+plot(accs$k,accs$accuracy, type = "l", xlab = "k")
+#Best value of k=7
+MeanAcc = colMeans(accs)
+MeanAcc
+#
+modelKNN = class::knn(TrainKnn[,c(2,5,7,8,12,14,15,16,18,20,21,22,25,26,27,29,30,31,32,33,34,35,36)],TestKnn[,c(2,5,7,8,12,14,15,16,18,20,21,22,25,26,27,29,30,31,32,33,34,35,36)],(TrainKnn$Attrition),k=9,prob=TRUE)
+table(modelKNN,TestKnn$Attrition)
+CM = confusionMatrix(table(modelKNN,TestKnn$Attrition))
+
+##### confusionMatrix KNN #####
+CM
+
+######NB-Naive Base #####
+
+iterations = 100
+accsNB = data.frame(accuracy = numeric(30), k = numeric(30))
+splitPerc = .80
+
+TrainIndicesNB = sample(seq(1:length(Empl$Attrition)),round(splitPerc * length(Empl$Attrition)))
+TrainNB = Empl[TrainIndicesNB,]
+TestNB = Empl[-TrainIndicesNB,]
+
+for(i in 1:30)
+{
+modelNB = naiveBayes(TrainNB[,c(2,5,7,8,12,14,15,16,18,20,21,22,25,26,27,29,30,31,32,33,34,35,36)],as.factor(TrainNB$Attrition))
+table(predict(modelNB,TestNB[,c(2,5,7,8,12,14,15,16,18,20,21,22,25,26,27,29,30,31,32,33,34,35,36)]),as.factor(TestNB$Attrition))
+CM = confusionMatrix(table(predict(modelNB,TestNB[,c(2,11)]),as.factor(TestNB$Attrition)))
+ accsNB$accuracy[i] = CM$overall[1]
+  accsNB$k[i] = i
+}
+plot(accsNB$k,accsNB$accuracy, type = "l", xlab = "k")
+#Best value of k=7
+MeanAccNB = colMeans(accsNB)
+MeanAccNB
+
+modelNB = naiveBayes(TrainNB[,c(2,5,7,8,12,14,15,16,18,20,21,22,25,26,27,29,30,31,32,33,34,35,36)],as.factor(TrainNB$Attrition))
+table(predict(modelNB,TestNB[,c(2,5,7,8,12,14,15,16,18,20,21,22,25,26,27,29,30,31,32,33,34,35,36)]),as.factor(TestNB$Attrition))
+CM = confusionMatrix(table(predict(modelNB,TestNB[,c(2,5,7,8,12,14,15,16,18,20,21,22,25,26,27,29,30,31,32,33,34,35,36)]),as.factor(TestNB$Attrition)))
+
+##### confusionMatrix NB #####
+CM
+
+##### Random Forest #####
+Test<-na.omit(Test)
+Train<-na.omit(Train)
+# Random Forest (training data)
+# Remove id variable as it's just for reference
+dat.train.rf <- Train
+train.rf<-randomForest(as.factor(Attrition)~.,data=dat.train.rf,mtry=4,ntree=500,importance=T)
+fit.pred<-predict(train.rf,newdata=dat.train.rf,type="prob")
+pred <- prediction(fit.pred[,2], dat.train.rf$Attrition)
+roc.perf = performance(pred, measure = "tpr", x.measure = "fpr")
+auc.train <- performance(pred, measure = "auc")
+auc.train <- auc.train@y.values
+plot(roc.perf)
+abline(a=0, b= 1)
+text(x = .40, y = .6,paste("AUC = ", round(auc.train[[1]],3), sep = ""))
+#AUC=1
+
+# Random Forest (test data)
+#Predict test set
+dat.val1.rf <- Test
+pred.val1<-predict(train.rf,newdata=dat.val1.rf,type="prob")
+pred <- prediction(pred.val1[,2], dat.val1.rf$Attrition)
+roc.perf = performance(pred, measure = "tpr", x.measure = "fpr")
+auc.train <- performance(pred, measure = "auc")
+auc.train <- auc.train@y.values
+plot(roc.perf, colorize=TRUE)
+abline(a=0, b= 1)
+text(x = .40, y = .6,paste("AUC = ", round(auc.train[[1]],3), sep = ""))
+# AUC = 0.974
+```
+
+```{r Pred}
+Empl_NoAttrition_Pred<-Empl_No_Attrition%>%select(Age,Monthly.Income,BusinessTravel,Daily.Rate,Distance.From.Home,Education,EducationField,Environment.Satisfaction,Gender,(Hourly.Rate),Job.Involvement,Job.Level,Job.Satisfaction,Marital.Status,(Monthly.Rate),Num.Companies.Worked,OverTime,Percent.Salary.Hike,Performance.Rating,Relationship.Satisfaction,Stock.Option.Level,(Total.Working.Years),Training.Times.Last.Year,Work.Life.Balance,(Years.At.Company),Years.In.Current.Role,Years.Since.Last.Promotion,Years.With.Curr.Manager)
+dim(TrainKnn)
+dim(Empl_No_Attrition)
+
+TrainKnn<-na.omit(TrainKnn)
+Empl_No_Attrition<-na.omit(Empl_No_Attrition)
+
+modelKNN=class::knn(TrainKnn[,c(2,5,7,8,12,14,15,16,18,20,21,22,25,26,27,29,30,31,32,33,34,35,36)],Empl_No_Attrition[,c(2,4,6,7,11,13,14,15,17,19,20,21,24,25,26,28,29,30,31,32,33,34,35)],TrainKnn$Attrition, prob = TRUE, k = 7)
+modelKNN
+write.csv(data.frame(modelKNN),'C:/Sowmya/SMU/04_Doing Data Science/Unit-14 & Unit-15/CaseStudy2Predict_Attrition_KNN.csv')
+modelNB = naiveBayes(TrainNB[,c(2,5,7,8,12,14,15,16,18,20,21,22,25,26,27,29,30,31,32,33,34,35,36)],as.factor(TrainNB$Attrition))
+PredNB=predict(modelNB,Empl_No_Attrition[,c(2,4,6,7,11,13,14,15,17,19,20,21,24,25,26,28,29,30,31,32,33,34,35)])
+PredNB
+write.csv(data.frame(PredNB),'C:/Sowmya/SMU/04_Doing Data Science/Unit-14 & Unit-15/CaseStudy2Predict_Attrition_NB.csv')
+```

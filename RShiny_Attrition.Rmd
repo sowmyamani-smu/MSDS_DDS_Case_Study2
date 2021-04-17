@@ -1,0 +1,130 @@
+
+```{r }
+library(shiny)
+library(shinythemes)
+library(dashboard)
+ 
+#Libraries loaded for the ANalysis
+library(XML) 
+library(dplyr)
+library(RCurl)
+library(httr)
+library(jsonlite)
+library(tidyverse)
+library(naniar)
+library(GGally)
+library(ggplot2)
+library(class)
+library(caret)
+library(knnp)
+library(e1071)
+library(ggplot2)
+library(maps)
+library(dplyr)
+library(mapproj)
+library(ggplot2)
+library(dplyr)
+library(ggcorrplot)
+library(GGally)
+library(viridis)
+library(gplots)
+library(leaps)
+library(matrixStats)
+library(ResourceSelection)
+library(MASS)
+library(glmnet)
+library(ROCR)
+library(randomForest)
+library(tidyverse)
+library(dplyr)
+library(naniar)
+library(GGally)
+library(ggplot2)
+library(class)
+library(caret)
+library(e1071)
+library(ggcorrplot)
+library(magrittr)
+library(dplyr)
+library(tidyr)
+library(naniar)
+library(ggplot2)
+library(plotly)
+library(forcats)
+library(GGally)
+library(ggcorrplot)
+library(car)
+library(ISLR)
+library(leaps)
+library(matrixStats)
+library(leaps)
+library(olsrr)
+library(OLScurve)
+library(glmnet)
+library(ResourceSelection)
+library(shiny)
+
+#Import the Employee Data
+Empl<-read.csv('C:/Sowmya/SMU/04_Doing Data Science/Unit-14 & Unit-15/RShiny/rsconnect/shinyapps.io/sowmyamani/CaseStudy2-data.csv',header = TRUE)
+#Empl1<-read.csv('Sow_RShiny/CaseStudy2-data.csv')
+ui <- shinyUI(fluidPage(theme = shinytheme('simplex'),
+titlePanel("Employee Attrition Analysis"),
+  sidebarLayout(
+    sidebarPanel(
+      h5("Please make the seelections to view the Employee Attrition Data"),
+      radioButtons("Gender", "Select Employee Gender", choices=c("Male","Female")),
+      selectInput("BusinessTravel", "Select Business Travel Type", Empl$BusinessTravel),
+      selectInput("EducationField", "Select Employee Field Type", Empl$EducationField,selected = "Life Sciences"),
+    selectInput("JobRole", "Select Employee Job Role", Empl$Job.Role,selected = "Manufacturing Director")
+    #radioButtons("MaritalStatus", "Select Employee MaritalStatus", choices=c("Single","Married","Divorced"))
+   # sliderInput("MonthlyIncome", "Select Employee Monthly Income", 1081,19999,1081)
+   # selectInput("TotalWorkingYears", "Select Employee Total Working Years", Empl$Num.Companies.Worked,selected ="9"),
+    #selectInput("OverTIme", "Select Employee Over Time Status", Empl$OverTime,selected = "Yes")
+        ),
+    
+      mainPanel(
+        
+        tabsetPanel(type="tab",
+                      tabPanel("Plot",plotOutput("Plot")),
+                    tabPanel("Data",tableOutput("Data")),
+           tabPanel("Summary",verbatimTextOutput("Summary"))
+                )
+       #(textOutput("Gender")),
+       #(textOutput("BusinessTravelType")),
+       #(textOutput("EducationField")),
+       #(textOutput("JobRole")),
+       #(textOutput("MaritalStatus")),
+       #(textOutput("MonthlyIncome")),
+       #(textOutput("TotalWorkingYears")),
+       #(textOutput("OverTIme"))
+               )
+    )
+  )
+)
+
+server <- shinyServer(function(input, output){
+    output$Data <- renderTable(Empl%>%filter(Empl$Gender==input$Gender & Empl$BusinessTravel==input$BusinessTravel & Empl$EducationField==input$EducationField & Empl$Job.Role==input$JobRole 
+                                             #& Empl$Marital.Status==input$MaritalStatus  
+                                             #& Empl$Monthly.Income ==input$MonthlyIncome 
+                                             #&  #Empl$Total.Working.Years==input$TotalWorkingYears & Empl$OverTime==input$OverTIme
+                                               ))
+      output$Summary <- renderPrint(summary(Empl))
+  output$Plot <- renderPlot({
+    Empl%>%filter(Empl$Gender==input$Gender & Empl$BusinessTravel==input$BusinessTravel & Empl$EducationField==input$EducationField & Empl$Job.Role==input$JobRole )%>%ggplot(aes(x=as.factor(Employee.Count), fill=Attrition)) + 
+  geom_bar() + 
+  scale_fill_viridis_d() +
+  ylab("Count") +xlab("Attrition")+
+  ggtitle("Attrition Summary")+ theme(axis.text.x = element_text(angle=90, hjust=1))
+  })
+  #output$Gender <- renderText(input$Gender)
+  #output$BusinessTravelType <- renderText(input$BusinessTravel)
+  #output$EducationField <- renderText(input$EducationField)
+  #output$JobRole <- renderText(input$JobRole)
+  #output$MaritalStatus <- renderText(input$MaritalStatus)
+  #output$MonthlyIncome <- renderText(input$MonthlyIncome)
+  #output$TotalWorkingYears <- renderText(input$TotalWorkingYears)
+  #output$OverTIme <- renderText(input$OverTIme)& Empl$Marital.Status==input$MaritalStatus
+})
+
+shinyApp(ui,server)
+```
